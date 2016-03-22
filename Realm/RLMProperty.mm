@@ -429,6 +429,23 @@ BOOL RLMPropertyTypeIsNumeric(RLMPropertyType propertyType) {
     return prop;
 }
 
+- (RLMProperty *)copyWithNewName:(NSString *)name {
+    RLMProperty *prop = [self copy];
+    prop->_name = name;
+    prop->_type = _type;
+    prop->_objcType = _objcType;
+    prop->_objectClassName = _objectClassName;
+    prop->_indexed = _indexed;
+    prop->_isPrimary = _isPrimary;
+    prop->_swiftIvar = _swiftIvar;
+    prop->_optional = _optional;
+    prop->_declarationIndex = _declarationIndex;
+
+    [prop updateAccessors];
+
+    return prop;
+}
+
 - (BOOL)isEqualToProperty:(RLMProperty *)property {
     return _type == property->_type
         && _indexed == property->_indexed
