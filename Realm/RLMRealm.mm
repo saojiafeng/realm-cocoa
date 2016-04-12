@@ -481,6 +481,15 @@ static void CheckReadWrite(RLMRealm *realm, NSString *msg=@"Cannot write to a re
     }
 }
 
+- (void)beginWriteTransactionWithNotificationStuff {
+    try {
+        _realm->begin_transaction(true);
+    }
+    catch (std::exception &ex) {
+        @throw RLMException(ex);
+    }
+}
+
 - (void)commitWriteTransaction {
     [self commitWriteTransaction:nil];
 }
