@@ -220,6 +220,7 @@ static NSDictionary *RLMAnalyticsPayload() {
 }
 
 void RLMSendAnalytics() {
+    return;
     if (getenv("REALM_DISABLE_ANALYTICS") || !RLMIsDebuggerAttached() || RLMIsRunningInPlayground()) {
         return;
     }

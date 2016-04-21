@@ -19,6 +19,7 @@
 #import "RLMTestCase.h"
 
 #import <libkern/OSAtomic.h>
+#import <math.h>
 #import <objc/runtime.h>
 #import <stdalign.h>
 
@@ -87,7 +88,7 @@
 @implementation IndexedObject
 + (NSArray *)indexedProperties
 {
-    return @[@"stringCol", @"integerCol", @"intCol", @"longCol", @"longlongCol", @"boolCol", @"dateCol", @"optionalIntCol", @"optionalBoolCol"];
+    return @[@"stringCol", @"integerCol", @"intCol", @"longCol", @"longlongCol", @"boolCol", @"optionalIntCol", @"optionalBoolCol"];
 }
 @end
 
@@ -651,27 +652,51 @@ RLM_ARRAY_TYPE(PrimaryEmployeeObject);
     [realm commitWriteTransaction];
 }
 
-- (void)testDatePrecisionPreservation
-{
-    DateObject *dateObject = [[DateObject alloc] initWithValue:@[NSDate.distantFuture]];
+- (void)testDateDistantFuture {
     RLMRealm *realm = [RLMRealm defaultRealm];
     [realm beginWriteTransaction];
-    [realm addObject:dateObject];
+    DateObject *dateObject = [DateObject createInRealm:realm withValue:@[NSDate.distantFuture]];
     [realm commitWriteTransaction];
     XCTAssertEqualObjects(NSDate.distantFuture, dateObject.dateCol);
-
-    [realm beginWriteTransaction];
-    NSDate *date = ({
-        NSCalendarUnit units = (NSCalendarUnit)(NSCalendarUnitMonth | NSCalendarUnitYear | NSCalendarUnitDay);
-        NSDateComponents *components = [[NSCalendar currentCalendar] components:units fromDate:NSDate.date];
-        components.calendar = [NSCalendar currentCalendar];
-        components.year += 50000;
-        components.date;
-    });
-    dateObject.dateCol = date;
-    [realm commitWriteTransaction];
-    XCTAssertEqualObjects(date, dateObject.dateCol);
 }
+
+- (void)testDateDistantPast {
+    RLMRealm *realm = [RLMRealm defaultRealm];
+    [realm beginWriteTransaction];
+    DateObject *dateObject = [DateObject createInRealm:realm withValue:@[NSDate.distantPast]];
+    [realm commitWriteTransaction];
+    XCTAssertEqualObjects(NSDate.distantPast, dateObject.dateCol);
+}
+
+- (void)testDate50kYears {
+    NSCalendarUnit units = (NSCalendarUnit)(NSCalendarUnitMonth | NSCalendarUnitYear | NSCalendarUnitDay);
+    NSDateComponents *components = [[NSCalendar currentCalendar] components:units fromDate:NSDate.date];
+    components.calendar = [NSCalendar currentCalendar];
+    components.year += 50000;
+
+    RLMRealm *realm = [RLMRealm defaultRealm];
+    [realm beginWriteTransaction];
+    DateObject *dateObject = [DateObject createInRealm:realm withValue:@[components.date]];
+    [realm commitWriteTransaction];
+
+    XCTAssertEqualObjects(components.date, dateObject.dateCol);
+}
+
+//- (void)testExactRepreentationOfDatesAroundNow {
+//    NSDate *date = [NSDate date];
+//
+//    RLMRealm *realm = [RLMRealm defaultRealm];
+//    [realm beginWriteTransaction];
+//    DateObject *dateObject = [DateObject createInRealm:realm withValue:@[date]];
+//
+//    for (int i = 0; i < 100; ++i) {
+//        XCTAssertEqualObjects(dateObject.dateCol, date);
+//        double next = nextafter(date.timeIntervalSinceReferenceDate, DBL_MAX);
+//        date = [NSDate dateWithTimeIntervalSinceReferenceDate:next];
+//        dateObject.dateCol = date;
+//    }
+//    [realm cancelWriteTransaction];
+//}
 
 - (void)testDataSizeLimits {
     RLMRealm *realm = [RLMRealm defaultRealm];
@@ -1526,7 +1551,7 @@ RLM_ARRAY_TYPE(PrimaryEmployeeObject);
     XCTAssertTrue(boolProperty.indexed, @"indexed property should have an index");
 
     RLMProperty *dateProperty = schema[IndexedObject.className][@"dateCol"];
-    XCTAssertTrue(dateProperty.indexed, @"indexed property should have an index");
+    XCTAssertFalse(dateProperty.indexed, @"non-indexed property should have an index");
 
     RLMProperty *optionalIntProperty = schema[IndexedObject.className][@"optionalIntCol"];
     XCTAssertTrue(optionalIntProperty.indexed, @"indexed property should have an index");

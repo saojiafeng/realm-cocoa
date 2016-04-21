@@ -22,8 +22,8 @@
 
 #import <realm/array.hpp>
 #import <realm/binary_data.hpp>
-#import <realm/datetime.hpp>
 #import <realm/string_data.hpp>
+#import <realm/timestamp.hpp>
 #import <realm/util/file.hpp>
 
 namespace realm {
@@ -152,14 +152,19 @@ static inline realm::BinaryData RLMBinaryDataForNSData(__unsafe_unretained NSDat
 }
 
 // Date convertion utilities
-static inline NSDate *RLMDateTimeToNSDate(realm::DateTime dateTime) {
-    auto timeInterval = static_cast<NSTimeInterval>(dateTime.get_datetime());
+static inline NSDate *RLMTimestampToNSDate(realm::Timestamp ts) {
+    if (ts.is_null())
+        return nil;
+    auto timeInterval = static_cast<NSTimeInterval>(ts.get_seconds()) + ts.get_nanoseconds() / 1'000'000'000.0;
     return [NSDate dateWithTimeIntervalSince1970:timeInterval];
 }
 
-static inline realm::DateTime RLMDateTimeForNSDate(__unsafe_unretained NSDate *const date) {
-    auto time = static_cast<int64_t>(date.timeIntervalSince1970);
-    return realm::DateTime(time);
+static inline realm::Timestamp RLMTimestampForNSDate(__unsafe_unretained NSDate *const date) {
+    auto timeInterval = date.timeIntervalSince1970;
+    return {
+        static_cast<int64_t>(timeInterval),
+        static_cast<uint32_t>(fmod(timeInterval, 1.0) * 1'000'000'000.0)
+    };
 }
 
 static inline NSUInteger RLMConvertNotFound(size_t index) {
