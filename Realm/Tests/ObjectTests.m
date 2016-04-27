@@ -682,21 +682,23 @@ RLM_ARRAY_TYPE(PrimaryEmployeeObject);
     XCTAssertEqualObjects(components.date, dateObject.dateCol);
 }
 
-//- (void)testExactRepreentationOfDatesAroundNow {
-//    NSDate *date = [NSDate date];
-//
-//    RLMRealm *realm = [RLMRealm defaultRealm];
-//    [realm beginWriteTransaction];
-//    DateObject *dateObject = [DateObject createInRealm:realm withValue:@[date]];
-//
-//    for (int i = 0; i < 100; ++i) {
-//        XCTAssertEqualObjects(dateObject.dateCol, date);
-//        double next = nextafter(date.timeIntervalSinceReferenceDate, DBL_MAX);
-//        date = [NSDate dateWithTimeIntervalSinceReferenceDate:next];
-//        dateObject.dateCol = date;
-//    }
-//    [realm cancelWriteTransaction];
-//}
+- (void)testExactRepreentationOfDatesAroundNow {
+    NSDate *date = [NSDate date];
+    //
+    date = [NSDate dateWithTimeIntervalSince1970:date.timeIntervalSince1970];
+
+    RLMRealm *realm = [RLMRealm defaultRealm];
+    [realm beginWriteTransaction];
+    DateObject *dateObject = [DateObject createInRealm:realm withValue:@[date]];
+
+    for (int i = 0; i < 10000; ++i) {
+        XCTAssertEqualObjects(dateObject.dateCol, date);
+        double next = nextafter(date.timeIntervalSince1970, DBL_MAX);
+        date = [NSDate dateWithTimeIntervalSince1970:next];
+        dateObject.dateCol = date;
+    }
+    [realm cancelWriteTransaction];
+}
 
 - (void)testDataSizeLimits {
     RLMRealm *realm = [RLMRealm defaultRealm];
